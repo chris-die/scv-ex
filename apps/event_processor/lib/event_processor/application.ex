@@ -6,6 +6,18 @@ defmodule EventProcessor.Application do
   use Application
 
   def start(_type, _args) do
+    require Logger
+    require ExAws
+
+    # TODO: create the queue if it doesn't exist
+
+    {:ok, response} =
+      Application.get_env(:event_processor, :sqs_event_queue_name)
+        |> ExAws.SQS.get_queue_url
+        |> ExAws.request
+
+    # Logger.debug(response.body.queue_url)
+    
     # List all child processes to be supervised
     children = [
       # Starts a worker by calling: EventProcessor.Worker.start_link(arg)

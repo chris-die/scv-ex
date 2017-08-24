@@ -1,17 +1,21 @@
 defmodule EventProcessor.Mixfile do
   use Mix.Project
 
+  @version "0.1.0"
+
   def project do
     [
       app: :event_processor,
-      version: "0.1.0",
+      version: @version,
       build_path: "../../_build",
       config_path: "../../config/config.exs",
       deps_path: "../../deps",
       lockfile: "../../mix.lock",
       elixir: "~> 1.5",
       start_permanent: Mix.env == :prod,
-      deps: deps()
+      deps: deps(),
+      name: "Serato SCV Event Processor",
+      docs: [source_ref: "v#{@version}", main: "EventProcessor"]
     ]
   end
 
