@@ -26,7 +26,14 @@ defmodule EventProcessor.Mixfile do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      # {:dep_from_hexpm, "~> 0.3.0"},
+      {:ex_aws, "~> 1.1.4"},
+      {:poison, ">= 1.2.0"},
+      {:hackney, "~> 1.6"},
+      {:sweet_xml, "~> 0.6"},
+      {:gen_stage, "~> 0.11.0"},
+      {:configparser_ex, "~> 0.2.1"},
+      {:credo, "~> 0.4.3", only: [:dev, :test]},
+      {:ex_doc,  ">= 0.0.0", only: :dev}
       # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"},
       # {:sibling_app_in_umbrella, in_umbrella: true},
     ]
