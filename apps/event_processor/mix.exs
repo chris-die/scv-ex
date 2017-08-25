@@ -22,7 +22,8 @@ defmodule EventProcessor.Mixfile do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
-      extra_applications: [:logger],
+      registered: [:event_processor],
+      extra_applications: [:logger, :ex_aws, :hackney],
       mod: {EventProcessor.Application, []}
     ]
   end
@@ -34,7 +35,7 @@ defmodule EventProcessor.Mixfile do
       {:poison, ">= 1.2.0"},
       {:hackney, "~> 1.6"},
       {:sweet_xml, "~> 0.6"},
-      {:gen_stage, "~> 0.11.0"},
+      {:gen_stage, "~> 0.12.0"},
       {:configparser_ex, "~> 0.2.1"},
       {:credo, "~> 0.4.3", only: [:dev, :test]},
       {:ex_doc,  ">= 0.0.0", only: :dev}

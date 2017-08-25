@@ -6,22 +6,24 @@ defmodule EventProcessor.Application do
   use Application
 
   def start(_type, _args) do
-    require Logger
     require ExAws
+    import Supervisor.Spec
 
     # TODO: create the queue if it doesn't exist
+    # TODO: error handling
 
     {:ok, response} =
       Application.get_env(:event_processor, :sqs_event_queue_name)
         |> ExAws.SQS.get_queue_url
         |> ExAws.request
 
+    # require Logger
     # Logger.debug(response.body.queue_url)
     
     # List all child processes to be supervised
     children = [
-      # Starts a worker by calling: EventProcessor.Worker.start_link(arg)
-      # {EventProcessor.Worker, arg},
+      worker(EventProcessor.SQSProducer, [response.body.queue_url]),
+      worker(EventProcessor.SQSConsumer, [])
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
@@ -29,4 +31,5 @@ defmodule EventProcessor.Application do
     opts = [strategy: :one_for_one, name: EventProcessor.Supervisor]
     Supervisor.start_link(children, opts)
   end
+
 end
