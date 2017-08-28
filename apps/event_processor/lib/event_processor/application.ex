@@ -17,13 +17,15 @@ defmodule EventProcessor.Application do
         |> ExAws.SQS.get_queue_url
         |> ExAws.request
 
-    # require Logger
-    # Logger.debug(response.body.queue_url)
-    
+    queue_url = String.replace(response.body.queue_url, "https://", "")
+        |> String.split("/")
+        |> tl
+        |> Enum.join("/")
+
     # List all child processes to be supervised
     children = [
-      worker(EventProcessor.SQSProducer, [response.body.queue_url]),
-      worker(EventProcessor.SQSConsumer, [])
+      worker(EventProcessor.SQSProducer, ["/#{queue_url}"]),
+      worker(EventProcessor.SQSConsumer, ["/#{queue_url}"])
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

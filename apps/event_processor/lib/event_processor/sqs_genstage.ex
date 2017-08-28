@@ -1,15 +1,15 @@
 defmodule EventProcessor.SQSProducer do
   use GenStage
 
-  def start_link(queue_name) do
-    GenStage.start_link(__MODULE__, queue_name, name: __MODULE__)
+  def start_link(queue_url) do
+    GenStage.start_link(__MODULE__, queue_url, name: __MODULE__)
   end
 
-  def init(queue_name) do
-    {:producer, %{queue: queue_name, current_demand: 0}}
+  def init(queue_url) do
+    {:producer, %{queue_url: queue_url, current_demand: 0}}
   end
 
-  def handle_cast(:check_messages, %{queue: _, current_demand: 0} = state) do
+  def handle_cast(:check_messages, %{queue_url: _, current_demand: 0} = state) do
     {:noreply, [], state}
   end
 
@@ -17,8 +17,10 @@ defmodule EventProcessor.SQSProducer do
     # TODO: error handling
     {:ok, response} =
       ExAws.SQS.receive_message(
-        state.queue,
-        max_number_of_messages: min(state.current_demand, 10)
+        state.queue_url,
+        max_number_of_messages: min(state.current_demand, 10),
+        visibility_timeout: 60,
+        wait_time_seconds: 20
       )
       |> ExAws.request
 
@@ -45,13 +47,13 @@ end
 defmodule EventProcessor.SQSConsumer do
   use ConsumerSupervisor
 
-  def start_link() do
-    ConsumerSupervisor.start_link(__MODULE__, :ok)
+  def start_link(queue_url) do
+    ConsumerSupervisor.start_link(__MODULE__, {:ok, queue_url})
   end
 
-  def init(:ok) do
+  def init({:ok, queue_url}) do
     children = [
-      worker(EventProcessor.Processor, [], restart: :temporary),
+      worker(EventProcessor.Processor, [queue_url], restart: :temporary),
     ]
 
     {:ok, children, strategy: :one_for_one, subscribe_to: [{EventProcessor.SQSProducer, max_demand: 10, min_demand: 1}]}
@@ -59,13 +61,15 @@ defmodule EventProcessor.SQSConsumer do
 end
 
 defmodule EventProcessor.Processor do
-  def start_link(message) do
-    Task.start_link(__MODULE__, :process_message, [message])
+  def start_link(queue_url, message) do
+    Task.start_link(__MODULE__, :process_message, [queue_url, message])
   end
 
-  def process_message(message) do
+  def process_message(queue_url, message) do
     require Logger
-    Logger.debug("Sleeping for 2s")
-    :timer.sleep(2_000)
+    Logger.debug(inspect(message.body))
+
+    ExAws.SQS.delete_message(queue_url, message.receipt_handle)
+    |> ExAws.request
   end
 end
