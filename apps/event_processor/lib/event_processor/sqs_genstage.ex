@@ -19,10 +19,13 @@ defmodule EventProcessor.SQSProducer do
       ExAws.SQS.receive_message(
         state.queue_url,
         max_number_of_messages: min(state.current_demand, 10),
-        visibility_timeout: 60,
+        visibility_timeout: 10,
         wait_time_seconds: 20
       )
       |> ExAws.request
+
+    require Logger
+    Logger.debug("Current demand: #{state.current_demand}")
 
     GenStage.cast(__MODULE__, :check_messages)
 
@@ -56,7 +59,9 @@ defmodule EventProcessor.SQSConsumer do
       worker(EventProcessor.Processor, [queue_url], restart: :temporary),
     ]
 
-    {:ok, children, strategy: :one_for_one, subscribe_to: [{EventProcessor.SQSProducer, max_demand: 10, min_demand: 1}]}
+    subscriptions = [{EventProcessor.SQSProducer, [max_demand: 10, min_demand: 1]}]
+
+    {:ok, children, strategy: :one_for_one, subscribe_to: subscriptions}
   end
 end
 

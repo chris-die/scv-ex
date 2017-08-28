@@ -7,7 +7,6 @@ defmodule EventProcessor.Application do
 
   def start(_type, _args) do
     require ExAws
-    import Supervisor.Spec
 
     # TODO: create the queue if it doesn't exist
     # TODO: error handling
@@ -24,8 +23,16 @@ defmodule EventProcessor.Application do
 
     # List all child processes to be supervised
     children = [
-      worker(EventProcessor.SQSProducer, ["/#{queue_url}"]),
-      worker(EventProcessor.SQSConsumer, ["/#{queue_url}"])
+      Supervisor.child_spec(
+        EventProcessor.SQSProducer,
+        start: {EventProcessor.SQSProducer, :start_link, ["/#{queue_url}"]},
+        type: :worker
+      ),
+      Supervisor.child_spec(
+        EventProcessor.SQSConsumer,
+        start: {EventProcessor.SQSConsumer, :start_link, [1, "/#{queue_url}"]},
+        type: :worker
+      )
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
