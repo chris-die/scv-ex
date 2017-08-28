@@ -24,9 +24,6 @@ defmodule EventProcessor.SQSProducer do
       )
       |> ExAws.request
 
-    require Logger
-    Logger.debug("Current demand: #{state.current_demand}")
-
     GenStage.cast(__MODULE__, :check_messages)
 
     {
@@ -57,6 +54,12 @@ defmodule EventProcessor.SQSConsumer do
   def init({:ok, queue_url}) do
     children = [
       worker(EventProcessor.Processor, [queue_url], restart: :temporary),
+      # Supervisor.child_spec(
+      #   EventProcessor.Processor,
+      #   start: {EventProcessor.Processor, :start_link, [queue_url]},
+      #   type: :worker,
+      #   restart: :temporary
+      # )
     ]
 
     subscriptions = [{EventProcessor.SQSProducer, [max_demand: 10, min_demand: 1]}]
