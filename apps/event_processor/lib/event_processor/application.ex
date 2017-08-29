@@ -26,12 +26,14 @@ defmodule EventProcessor.Application do
       Supervisor.child_spec(
         EventProcessor.SQSProducer,
         start: {EventProcessor.SQSProducer, :start_link, ["/#{queue_url}"]},
-        type: :worker
+        type: :worker,
+        id: {EventProcessor.SQSProducer, 1}
       ),
       Supervisor.child_spec(
         EventProcessor.SQSConsumer,
         start: {EventProcessor.SQSConsumer, :start_link, ["/#{queue_url}"]},
-        type: :worker
+        type: :worker,
+        id: {EventProcessor.SQSConsumer, 1}
       )
     ]
 

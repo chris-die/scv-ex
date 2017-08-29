@@ -48,7 +48,7 @@ defmodule EventProcessor.SQSConsumer do
   use ConsumerSupervisor
 
   def start_link(queue_url) do
-    ConsumerSupervisor.start_link(__MODULE__, {:ok, queue_url})
+    ConsumerSupervisor.start_link(__MODULE__, {:ok, queue_url}, name: __MODULE__)
   end
 
   def init({:ok, queue_url}) do
