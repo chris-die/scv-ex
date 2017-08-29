@@ -22,20 +22,20 @@ defmodule EventProcessor.Application do
         |> Enum.join("/")
 
     # List all child processes to be supervised
-    children = [
+    children = Enum.flat_map(0..0, &([
       Supervisor.child_spec(
         EventProcessor.SQSProducer,
-        start: {EventProcessor.SQSProducer, :start_link, ["/#{queue_url}"]},
+        start: {EventProcessor.SQSProducer, :start_link, [&1, "/#{queue_url}"]},
         type: :worker,
-        id: {EventProcessor.SQSProducer, 1}
+        id: {EventProcessor.SQSProducer, &1}
       ),
       Supervisor.child_spec(
         EventProcessor.SQSConsumer,
-        start: {EventProcessor.SQSConsumer, :start_link, ["/#{queue_url}"]},
+        start: {EventProcessor.SQSConsumer, :start_link, [&1,  "/#{queue_url}"]},
         type: :worker,
-        id: {EventProcessor.SQSConsumer, 1}
+        id: {EventProcessor.SQSConsumer, &1}
       )
-    ]
+    ]))
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options

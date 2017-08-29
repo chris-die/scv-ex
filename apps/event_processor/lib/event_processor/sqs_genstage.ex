@@ -1,15 +1,15 @@
 defmodule EventProcessor.SQSProducer do
   use GenStage
 
-  def start_link(queue_url) do
-    GenStage.start_link(__MODULE__, queue_url, name: __MODULE__)
+  def start_link(id, queue_url) do
+    GenStage.start_link(__MODULE__, {:ok, id, queue_url}, name: stage_name(id))
   end
 
-  def init(queue_url) do
-    {:producer, %{queue_url: queue_url, current_demand: 0}}
+  def init({:ok, id, queue_url}) do
+    {:producer, %{id: id, queue_url: queue_url, current_demand: 0}}
   end
 
-  def handle_cast(:check_messages, %{queue_url: _, current_demand: 0} = state) do
+  def handle_cast(:check_messages, %{id: _, queue_url: _, current_demand: 0} = state) do
     {:noreply, [], state}
   end
 
@@ -24,7 +24,7 @@ defmodule EventProcessor.SQSProducer do
       )
       |> ExAws.request
 
-    GenStage.cast(__MODULE__, :check_messages)
+    state.id |> stage_name |> GenStage.cast(:check_messages)
 
     {
       :noreply,
@@ -34,7 +34,7 @@ defmodule EventProcessor.SQSProducer do
   end
 
   def handle_demand(demand, state) do
-    GenStage.cast(__MODULE__, :check_messages)
+    state.id |> stage_name |> GenStage.cast(:check_messages)
 
     {
       :noreply,
@@ -42,16 +42,21 @@ defmodule EventProcessor.SQSProducer do
       %{state | current_demand: demand + state.current_demand}
     }
   end
+
+  defp stage_name(id) do
+    String.to_atom("#{__MODULE__}.#{id}")
+  end
 end
 
 defmodule EventProcessor.SQSConsumer do
   use ConsumerSupervisor
 
-  def start_link(queue_url) do
-    ConsumerSupervisor.start_link(__MODULE__, {:ok, queue_url}, name: __MODULE__)
+  def start_link(id, queue_url) do
+    name = String.to_atom("#{__MODULE__}.#{id}")
+    ConsumerSupervisor.start_link(__MODULE__, {:ok, id, queue_url}, name: name)
   end
 
-  def init({:ok, queue_url}) do
+  def init({:ok, id, queue_url}) do
     children = [
       worker(EventProcessor.Processor, [queue_url], restart: :temporary),
       # Supervisor.child_spec(
@@ -62,7 +67,8 @@ defmodule EventProcessor.SQSConsumer do
       # )
     ]
 
-    subscriptions = [{EventProcessor.SQSProducer, [max_demand: 10, min_demand: 1]}]
+    name = String.to_atom("Elixir.EventProcessor.SQSProducer.#{id}")
+    subscriptions = [{name, [max_demand: 10, min_demand: 1]}]
 
     {:ok, children, strategy: :one_for_one, subscribe_to: subscriptions}
   end
