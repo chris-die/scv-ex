@@ -22,7 +22,7 @@ defmodule EventProcessor.Application do
         |> Enum.join("/")
 
     # List all child processes to be supervised
-    children = Enum.flat_map(0..0, &([
+    children = Enum.flat_map(0..9, &([
       Supervisor.child_spec(
         EventProcessor.SQSProducer,
         start: {EventProcessor.SQSProducer, :start_link, [&1, "/#{queue_url}"]},

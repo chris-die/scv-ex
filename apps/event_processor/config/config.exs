@@ -35,4 +35,4 @@ config :ex_aws,
   secret_access_key: [{:system, "AWS_SECRET_ACCESS_KEY"}, {:awscli, "default", 30}, :instance_role]
 
 config :event_processor,
-  sqs_event_queue_name: "ChrisDemoQueue.fifo"
+  sqs_event_queue_name: "ChrisDemoQueue"
