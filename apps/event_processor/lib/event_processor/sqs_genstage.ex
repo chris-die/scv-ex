@@ -1,4 +1,4 @@
-defmodule EventProcessor.SQSProducer do
+  defmodule EventProcessor.SQSProducer do
   use GenStage
 
   def start_link(id, queue_url) do
@@ -15,21 +15,23 @@ defmodule EventProcessor.SQSProducer do
 
   def handle_cast(:check_messages, state) do
     # TODO: error handling
-    {:ok, response} =
-      ExAws.SQS.receive_message(
-        state.queue_url,
-        max_number_of_messages: min(state.current_demand, 10),
-        visibility_timeout: 10,
-        wait_time_seconds: 20
-      )
-      |> ExAws.request
+    {:ok, response} = state.queue_url
+        |> ExAws.SQS.receive_message(
+          max_number_of_messages: min(state.current_demand, 10),
+          visibility_timeout: 10,
+          wait_time_seconds: 20
+        )
+        |> ExAws.request
 
     state.id |> stage_name |> GenStage.cast(:check_messages)
 
     {
       :noreply,
       response.body.messages,
-      %{state | current_demand: state.current_demand - Enum.count(response.body.messages)}
+      %{
+       state |
+       current_demand: state.current_demand - Enum.count(response.body.messages)
+      }
     }
   end
 
@@ -58,13 +60,12 @@ defmodule EventProcessor.SQSConsumer do
 
   def init({:ok, id, queue_url}) do
     children = [
-      worker(EventProcessor.Processor, [queue_url], restart: :temporary),
-      # Supervisor.child_spec(
-      #   EventProcessor.Processor,
-      #   start: {EventProcessor.Processor, :start_link, [queue_url]},
-      #   type: :worker,
-      #   restart: :temporary
-      # )
+      Supervisor.child_spec(
+        EventProcessor.Processor,
+        start: {EventProcessor.Processor, :start_link, [queue_url]},
+        type: :worker,
+        restart: :temporary
+      )
     ]
 
     name = String.to_atom("Elixir.EventProcessor.SQSProducer.#{id}")
@@ -75,6 +76,8 @@ defmodule EventProcessor.SQSConsumer do
 end
 
 defmodule EventProcessor.Processor do
+  use Task
+
   def start_link(queue_url, message) do
     Task.start_link(__MODULE__, :process_message, [queue_url, message])
   end
@@ -83,7 +86,8 @@ defmodule EventProcessor.Processor do
     require Logger
     Logger.debug(inspect(message.body))
 
-    ExAws.SQS.delete_message(queue_url, message.receipt_handle)
-    |> ExAws.request
+    queue_url
+      |> ExAws.SQS.delete_message(message.receipt_handle)
+      |> ExAws.request
   end
 end

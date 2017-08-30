@@ -15,6 +15,12 @@ def deps do
 end
 ```
 
+## Build tools
+
+  * Run tests: `mix test` or `mix test --trace`
+  * Check code against style guide: `mix credo --all --strict --verbose`
+  * Generate application documentation: `mix docs`
+
 Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
 and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
 be found at [https://hexdocs.pm/event_processor](https://hexdocs.pm/event_processor).
